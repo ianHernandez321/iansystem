@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Payroll Management System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+        }
+
+        body {
+            background: #f0f2f5;
+            color: #333;
+        }
+
+        /* LOGIN */
+        .login-wrap {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+        }
+
+        .login-box {
+            background: #fff;
+            padding: 40px;
+            border-radius: 12px;
+            width: 400px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, .3);
+        }
+
+        .login-box h2 {
+            text-align: center;
+            margin-bottom: 8px;
+            color: #1e3c72;
+        }
+
+        .login-box p.sub {
+            text-align: center;
+            color: #888;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        .login-box input,
+        .login-box select {
+            width: 100%;
+            padding: 12px;
+            margin: 6px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .login-box button {
+            width: 100%;
+            padding: 12px;
+            background: #1e3c72;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .login-box button:hover {
+            background: #2a5298;
+        }
+
+        .login-hint {
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        /* LAYOUT */
+        .app {
+            display: none;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #1e3c72;
+            color: #ecf0f1;
+            height: 100vh;
+            position: fixed;
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            padding: 20px;
+            text-align: center;
+            background: #152a52;
+            font-size: 15px;
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar li {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: .2s;
+            font-size: 13.5px;
+        }
+
+        .sidebar li:hover,
+        .sidebar li.active {
+            background: #2a5298;
+            border-left-color: #ffd700;
+        }
+
+        .main {
+            margin-left: 250px;
+            padding: 20px;
+        }
+
+        .topbar {
+            background: #fff;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, .05);
+        }
+
+        .topbar h1 {
+            font-size: 20px;
+            color: #1e3c72;
+        }
+
+        .topbar .user-info {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .topbar button {
+            background: #e74c3c;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        /* SECTIONS */
+        .section {
+            display: none;
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, .05);
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .section h2 {
+            margin-bottom: 20px;
+            color: #1e3c72;
+            border-bottom: 2px solid #2a5298;
+            padding-bottom: 8px;
+        }
+
+        /* STATS */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .stat-card.green {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+        }
+
+        .stat-card.red {
+            background: linear-gradient(135deg, #eb3349, #f45c43);
+        }
+
+        .stat-card.orange {
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+        }
+
+        .stat-card.blue {
+            background: linear-gradient(135deg, #2193b0, #6dd5ed);
+        }
+
+        .stat-card.purple {
+            background: linear-gradient(135deg, #8e2de2, #4a00e0);
+        }
+
+        .stat-card h3 {
+            font-size: 13px;
+            opacity: .9;
+        }
+
+        .stat-card p {
+            font-size: 26px;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        /* FORMS & TABLES */
+        .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .form-row label {
+            min-width: 150px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .form-row input,
+        .form-row select,
+        .form-row textarea {
+            padding: 9px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        button.btn {
+            padding: 9px 16px;
+            background: #2a5298;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button.btn:hover {
+            background: #1e3c72;
+        }
+
+        button.btn-success {
+            background: #27ae60;
+        }
+
+        button.btn-success:hover {
+            background: #1e8449;
+        }
+
+        button.btn-danger {
+            background: #e74c3c;
+        }
+
+        button.btn-danger:hover {
+            background: #c0392b;
+        }
+
+        button.btn-warning {
+            background: #f39c12;
+        }
+
+        button.btn-warning:hover {
+            background: #d68910;
+        }
+
+        button.btn-info {
+            background: #17a2b8;
+        }
+
+        button.btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            font-size: 13.5px;
+        }
+
+        th {
+            background: #1e3c72;
+            color: #fff;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            color: #fff;
+        }
+
+        .badge.active {
+            background: #27ae60;
+        }
+
+        .badge.inactive {
+            background: #95a5a6;
+        }
+
+        .badge.present {
+            background: #27ae60;
+        }
+
+        .badge.absent {
+            background: #e74c3c;
+        }
+
+        .badge.late {
+            background: #f39c12;
+        }
+
+        .badge.ot {
+            background: #3498db;
+        }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, .5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h3 {
+            color: #1e3c72;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #2a5298;
+            padding-bottom: 8px;
+        }
+
+        .modal-close {
+            float: right;
+            cursor: pointer;
+            font-size: 24px;
+            color: #999;
+        }
+
+        /* PAYSLIP */
+        .payslip {
+            border: 2px solid #1e3c72;
+            padding: 25px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .payslip-header {
+            text-align: center;
+            border-bottom: 2px dashed #1e3c72;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .payslip-header h2 {
+            color: #1e3c72;
+        }
+
+        .payslip-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 13px;
+        }
+
+        .payslip-row.total {
+            border-top: 2px solid #1e3c72;
+            margin-top: 10px;
+            padding-top: 10px;
+            font-weight: bold;
+            font-size: 15px;
+        }
+
+        /* AUDIT LOG */
+        .audit-item {
+            padding: 8px;
+            border-left: 3px solid #2a5298;
+            background: #f8f9fa;
+            margin-bottom: 6px;
+            font-size: 13px;
+            border-radius: 3px;
+        }
+
+        .audit-item .time {
+            color: #888;
+            font-size: 11px;
+        }
+
+        @media(max-width:768px) {
+            .sidebar {
+                width: 60px;
+            }
+
+            .sidebar li {
+                font-size: 0;
+                padding: 12px;
+            }
+
+            .sidebar h2 {
+                font-size: 10px;
+                padding: 10px;
+            }
+
+            .main {
+                margin-left: 60px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- LOGIN -->
+    <div class="login-wrap" id="loginScreen">
+        <div class="login-box">
+            <h2>💼 Payroll System</h2>
+            <p class="sub">Employee Payroll Management</p>
+            <input type="text" id="loginUser" placeholder="Username" value="admin">
+            <input type="password" id="loginPass" placeholder="Password" value="admin">
+            <select id="loginRole">
+                <option value="Admin">Admin</option>
+                <option value="HR">HR Manager</option>
+                <option value="Payroll">Payroll Officer</option>
+                <option value="Employee">Employee</option>
+            </select>
+            <button onclick="login()">Login</button>
+            <p class="login-hint">Default: admin / admin</p>
+        </div>
+    </div>
+
+    <!-- APP -->
+    <div class="app" id="app">
+        <div class="sidebar">
+            <h2>💼 PAYROLL SYSTEM</h2>
+            <ul id="navMenu">
+                <li class="active" onclick="showSection('dashboard',this)">📊 Dashboard</li>
+                <li onclick="showSection('employees',this)">👥 Employees</li>
+                <li onclick="showSection('salary',this)">💰 Salary Setup</li>
+                <li onclick="showSection('attendance',this)">⏰ Attendance</li>
+                <li onclick="showSection('ot',this)">🕒 OT / Late / UT / Abs</li>
+                <li onclick="showSection('allowances',this)">🎁 Allowances & Bonus</li>
+                <li onclick="showSection('deductions',this)">💸 Deductions</li>
+                <li onclick="showSection('govt',this)">🏛️ Govt Contributions</li>
+                <li onclick="showSection('process',this)">🧮 Process Payroll</li>
+                <li onclick="showSection('payslips',this)">📄 Payslips</li>
+                <li onclick="showSection('history',this)">📚 Payroll History</li>
+                <li onclick="showSection('reports',this)">📈 Reports</li>
+                <li onclick="showSection('audit',this)">📝 Audit Logs</li>
+                <li onclick="showSection('users',this)">👤 User Accounts</li>
+                <li onclick="showSection('settings',this)">⚙️ Settings</li>
+            </ul>
+        </div>
+
+        <div class="main">
+            <div class="topbar">
+                <h1 id="pageTitle">Dashboard</h1>
+                <div>
+                    <span class="user-info" id="userInfo">👤 admin</span>
+                    <button onclick="logout()">Logout</button>
+                </div>
+            </div>
+
+            <!-- DASHBOARD -->
+            <div class="section active" id="dashboard">
+                <h2>Dashboard Overview</h2>
+                <div class="stats" id="statsGrid"></div>
+                <h3 style="margin-top:20px;">Recent Payroll Activity</h3>
+                <div id="recentActivity"></div>
+            </div>
+
+            <!-- EMPLOYEES -->
+            <div class="section" id="employees">
+                <h2>Employee Management</h2>
+                <button class="btn btn-success" onclick="openEmpModal()">➕ Add Employee</button>
+                <input id="empSearch" placeholder="🔍 Search by name or ID..."
+                    style="padding:10px;width:100%;margin:10px 0;border:1px solid #ddd;border-radius:5px;"
+                    oninput="renderEmployees()">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Position</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="empTable"></tbody>
+                </table>
+            </div>
+
+            <!-- SALARY -->
+            <div class="section" id="salary">
+                <h2>Salary Setup</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Position</th>
+                            <th>Rate Type</th>
+                            <th>Rate</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="salaryTable"></tbody>
+                </table>
+            </div>
+
+            <!-- ATTENDANCE -->
+            <div class="section" id="attendance">
+                <h2>Attendance & Time Records</h2>
+                <div class="form-row">
+                    <input type="date" id="attDate">
+                    <select id="attEmp"></select>
+                    <select id="attStatus" onchange="toggleAttendanceTimeFields()">
+                        <option value="Present">Present</option>
+                        <option value="Absent">Absent</option>
+                    </select>
+                    <input type="time" id="attIn" value="08:00">
+                    <input type="time" id="attOut" value="17:00">
+                    <button class="btn btn-success" onclick="addAttendance()">➕ Record</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Employee</th>
+                            <th>Time In</th>
+                            <th>Time Out</th>
+                            <th>Hours</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attTable"></tbody>
+                </table>
+            </div>
+
+            <!-- OT / LATE / UT / ABS -->
+            <div class="section" id="ot">
+                <h2>Overtime, Late, Undertime & Absences</h2>
+                <div class="form-row">
+                    <input type="date" id="recDate">
+                    <select id="recEmp"></select>
+                    <select id="recType">
+                        <option>Overtime</option>
+                        <option>Late</option>
+                        <option>Undertime</option>
+                        <option>Absent</option>
+                    </select>
+                    <input type="number" id="recHours" placeholder="Hours" step="0.5">
+                    <button class="btn btn-success" onclick="addRecord()">➕ Add Record</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Employee</th>
+                            <th>Type</th>
+                            <th>Hours</th>
+                            <th>Amount</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recTable"></tbody>
+                </table>
+            </div>
+
+            <!-- ALLOWANCES -->
+            <div class="section" id="allowances">
+                <h2>Allowances & Bonuses</h2>
+                <div class="form-row">
+                    <select id="alEmp"></select>
+                    <input id="alType" placeholder="Type (e.g., Rice Allowance, Performance Bonus)">
+                    <input type="number" id="alAmount" placeholder="Amount">
+                    <button class="btn btn-success" onclick="addAllowance()">➕ Add</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alTable"></tbody>
+                </table>
+            </div>
+
+            <!-- DEDUCTIONS -->
+            <div class="section" id="deductions">
+                <h2>Deductions</h2>
+                <div class="form-row">
+                    <select id="dedEmp"></select>
+                    <input id="dedType" placeholder="Type (e.g., Loan, Cash Advance)">
+                    <input type="number" id="dedAmount" placeholder="Amount">
+                    <button class="btn btn-success" onclick="addDeduction()">➕ Add</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dedTable"></tbody>
+                </table>
+            </div>
+
+            <!-- GOVT -->
+            <div class="section" id="govt">
+                <h2>Government Contributions & Taxes</h2>
+                <div class="form-grid">
+                    <div class="form-row"><label>SSS (Employee %):</label><input type="number" id="sssEmp" value="4.5"
+                            step="0.1"></div>
+                    <div class="form-row"><label>SSS (Employer %):</label><input type="number" id="sssEr" value="9.5"
+                            step="0.1"></div>
+                    <div class="form-row"><label>PhilHealth (Employee %):</label><input type="number" id="phEmp"
+                            value="1.5" step="0.1"></div>
+                    <div class="form-row"><label>PhilHealth (Employer %):</label><input type="number" id="phEr"
+                            value="1.5" step="0.1"></div>
+                    <div class="form-row"><label>Pag-IBIG (Employee %):</label><input type="number" id="hbEmp" value="2"
+                            step="0.1"></div>
+                    <div class="form-row"><label>Pag-IBIG (Employer %):</label><input type="number" id="hbEr" value="2"
+                            step="0.1"></div>
+                </div>
+                <h3 style="margin-top:20px;">Income Tax Brackets</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Taxable Income</th>
+                            <th>Rate</th>
+                            <th>Base Tax</th>
+                        </tr>
+                    </thead>
+                    <tbody id="taxTable"></tbody>
+                </table>
+                <button class="btn btn-success" onclick="saveGovt()" style="margin-top:15px;">💾 Save Rates</button>
+            </div>
+
+            <!-- PROCESS PAYROLL -->
+            <div class="section" id="process">
+                <h2>Process Payroll</h2>
+                <div class="form-row">
+                    <label>Pay Period:</label>
+                    <input type="date" id="ppFrom">
+                    <input type="date" id="ppTo">
+                    <button class="btn btn-success" onclick="processPayroll()">🧮 Calculate & Process</button>
+                </div>
+                <div id="processResult"></div>
+            </div>
+
+            <!-- PAYSLIPS -->
+            <div class="section" id="payslips">
+                <h2>Payslips</h2>
+                <div class="form-row">
+                    <select id="psEmp"></select>
+                    <select id="psPeriod"></select>
+                    <button class="btn" onclick="viewPayslip()">👁️ View</button>
+                    <button class="btn btn-warning" onclick="printPayslip()">🖨️ Print PDF</button>
+                </div>
+                <div id="payslipView"></div>
+            </div>
+
+            <!-- HISTORY -->
+            <div class="section" id="history">
+                <h2>Payroll History</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Period</th>
+                            <th>Employees</th>
+                            <th>Total Gross</th>
+                            <th>Total Deductions</th>
+                            <th>Total Net</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="histTable"></tbody>
+                </table>
+            </div>
+
+            <!-- REPORTS -->
+            <div class="section" id="reports">
+                <h2>Reports & Summaries</h2>
+                <div class="form-row">
+                    <select id="repType">
+                        <option>Payroll Summary</option>
+                        <option>Employee Earnings</option>
+                        <option>Tax Report</option>
+                        <option>Government Contributions</option>
+                        <option>Attendance Summary</option>
+                    </select>
+                    <button class="btn" onclick="generateReport()">📊 Generate</button>
+                    <button class="btn btn-success" onclick="exportExcel()">📗 Export Excel</button>
+                    <button class="btn btn-warning" onclick="exportPDF()">📕 Export PDF</button>
+                </div>
+                <div id="reportOutput" style="margin-top:20px;"></div>
+            </div>
+
+            <!-- AUDIT -->
+            <div class="section" id="audit">
+                <h2>Audit Logs</h2>
+                <button class="btn btn-danger btn-sm"
+                    onclick="if(confirm('Clear all audit logs?')){DB.audit=[];saveDB();renderAudit();}">🗑️ Clear
+                    Logs</button>
+                <div id="auditList" style="margin-top:15px;"></div>
+            </div>
+
+            <!-- USERS -->
+            <div class="section" id="users">
+                <h2>User Accounts</h2>
+                <div class="form-row">
+                    <input id="uName" placeholder="Username">
+                    <input id="uPass" placeholder="Password" type="password">
+                    <select id="uRole">
+                        <option>Admin</option>
+                        <option>HR</option>
+                        <option>Payroll</option>
+                        <option>Employee</option>
+                    </select>
+                    <button class="btn btn-success" onclick="addUser()">➕ Add User</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTable"></tbody>
+                </table>
+            </div>
+
+            <!-- SETTINGS -->
+            <div class="section" id="settings">
+                <h2>System Settings</h2>
+                <div class="form-grid">
+                    <div class="form-row"><label>Company Name:</label><input id="setCompany" value="Acme Corporation">
+                    </div>
+                    <div class="form-row"><label>Address:</label><input id="setAddress" value="123 Business St."></div>
+                    <div class="form-row"><label>Working Hours/Day:</label><input type="number" id="setHours" value="8">
+                    </div>
+                    <div class="form-row"><label>Working Days/Month:</label><input type="number" id="setDays"
+                            value="22"></div>
+                    <div class="form-row"><label>OT Multiplier:</label><input type="number" id="setOT" value="1.25"
+                            step="0.05"></div>
+                    <div class="form-row"><label>Late Deduction Multiplier:</label><input type="number" id="setLate"
+                            value="1" step="0.05"></div>
+                </div>
+                <button class="btn btn-success" onclick="saveSettings()" style="margin-top:15px;">💾 Save
+                    Settings</button>
+                <hr style="margin:24px 0; border:0; border-top:1px solid #ddd;">
+                <h3>Data Management</h3>
+                <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:12px;">
+                    <button class="btn btn-info" onclick="exportBackup()">⬇️ Export Backup</button>
+                    <button class="btn btn-warning" onclick="document.getElementById('backupFile').click()">⬆️ Import Backup</button>
+                    <button class="btn btn-danger" onclick="resetData()">🗑️ Reset Data</button>
+                </div>
+                <input type="file" id="backupFile" accept=".json,application/json" hidden onchange="importBackup(event)">
+            </div>
+        </div>
+    </div>
+
+    <!-- EMPLOYEE MODAL -->
+    <div class="modal" id="empModal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeEmpModal()">×</span>
+            <h3 id="empModalTitle">Add Employee</h3>
+            <div class="form-grid">
+                <div class="form-row"><label>Full Name:</label><input id="eName"></div>
+                <div class="form-row"><label>Position:</label><input id="ePos"></div>
+                <div class="form-row"><label>Status:</label><select id="eStatus">
+                        <option>Active</option>
+                        <option>Inactive</option>
+                        <option>On Leave</option>
+                    </select></div>
+                <div class="form-row"><label>Rate Type:</label><select id="eRateType">
+                        <option>Monthly</option>
+                        <option>Daily</option>
+                        <option>Hourly</option>
+                    </select></div>
+                <div class="form-row"><label>Rate Amount:</label><input type="number" id="eRate" step="0.01"></div>
+                <div class="form-row"><label>Email:</label><input id="eEmail"></div>
+                <div class="form-row"><label>Contact:</label><input id="eContact"></div>
+                <div class="form-row"><label>Hire Date:</label><input type="date" id="eHire"></div>
+                <div class="form-row"><label>TIN:</label><input id="eTIN"></div>
+            </div>
+            <button class="btn btn-success" onclick="saveEmployee()" style="margin-top:15px;">💾 Save</button>
+        </div>
+    </div>
+
+    <script>
+        // ===== DATA LAYER =====
+        let DB = JSON.parse(localStorage.getItem('payroll_db')) || {
+            employees: [
+                { id: 'EMP001', name: 'John Doe', pos: 'Software Engineer', status: 'Active', rateType: 'Monthly', rate: 50000, email: 'john@acme.com', contact: '09123456789', hire: '2023-01-15', tin: '123-456-789' },
+                { id: 'EMP002', name: 'Jane Smith', pos: 'HR Manager', status: 'Active', rateType: 'Monthly', rate: 60000, email: 'jane@acme.com', contact: '09123456780', hire: '2022-06-01', tin: '234-567-890' },
+                { id: 'EMP003', name: 'Mike Johnson', pos: 'Accountant', status: 'Active', rateType: 'Daily', rate: 1200, email: 'mike@acme.com', contact: '09123456781', hire: '2023-03-10', tin: '345-678-901' },
+                { id: 'EMP004', name: 'Sarah Lee', pos: 'Developer', status: 'Active', rateType: 'Hourly', rate: 350, email: 'sarah@acme.com', contact: '09123456782', hire: '2024-01-08', tin: '456-789-012' }
+            ],
+            departments: [{ name: 'IT', head: 'John Doe' }, { name: 'HR', head: 'Jane Smith' }, { name: 'Finance', head: 'Mike Johnson' }],
+            salary: [],
+            attendance: [],
+            records: [],
+            allowances: [],
+            deductions: [],
+            payroll: [],
+            users: [{ u: 'admin', p: 'admin', r: 'Admin' }, { u: 'hr', p: 'hr123', r: 'HR' }, { u: 'payroll', p: 'pay123', r: 'Payroll' }],
+            audit: [],
+            settings: { company: 'Acme Corporation', address: '123 Business St.', hours: 8, days: 22, ot: 1.25, late: 1 },
+            govt: {
+                sssEmp: 4.5, sssEr: 9.5, phEmp: 1.5, phEr: 1.5, hbEmp: 2, hbEr: 2, tax: [
+                    { min: 0, max: 250000, rate: 0, base: 0 },
+                    { min: 250001, max: 400000, rate: 0.15, base: 0 },
+                    { min: 400001, max: 800000, rate: 0.20, base: 22500 },
+                    { min: 800001, max: 2000000, rate: 0.25, base: 102500 },
+                    { min: 2000001, max: 8000000, rate: 0.30, base: 402500 },
+                    { min: 8000001, max: Infinity, rate: 0.35, base: 2202500 }
+                ]
+            }
+        };
+        let currentUser = null;
+        let editingEmpId = null;
+        let lastReportData = null;
+
+        function saveDB() { localStorage.setItem('payroll_db', JSON.stringify(DB)); }
+        function log(action) {
+            DB.audit.unshift({ time: new Date().toLocaleString(), user: currentUser?.u || 'system', action });
+            if (DB.audit.length > 500) DB.audit.pop();
+            saveDB();
+        }
+
+        // ===== LOGIN =====
+        function login() {
+            const u = document.getElementById('loginUser').value, p = document.getElementById('loginPass').value;
+            const user = DB.users.find(x => x.u === u && x.p === p);
+            if (user) {
+                currentUser = user;
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                document.getElementById('userInfo').textContent = '👤 ' + user.u + ' (' + user.r + ')';
+                log('User logged in: ' + user.u);
+                refreshAll();
+            } else alert('Invalid credentials');
+        }
+        function logout() { log('User logged out: ' + currentUser.u); location.reload(); }
+
+        // ===== NAVIGATION =====
+        function showSection(id, el) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.querySelectorAll('.sidebar li').forEach(l => l.classList.remove('active'));
+            if (el) el.classList.add('active');
+            const titles = { dashboard: 'Dashboard', employees: 'Employee Management', salary: 'Salary Setup', attendance: 'Attendance', ot: 'OT/Late/Undertime/Absent', allowances: 'Allowances & Bonuses', deductions: 'Deductions', govt: 'Govt Contributions', process: 'Process Payroll', payslips: 'Payslips', history: 'Payroll History', reports: 'Reports', audit: 'Audit Logs', users: 'User Accounts', settings: 'Settings' };
+            document.getElementById('pageTitle').textContent = titles[id];
+            const renderers = { dashboard: renderDashboard, employees: renderEmployees, salary: renderSalary, attendance: renderAttendance, ot: renderRecords, allowances: renderAllowances, deductions: renderDeductions, govt: renderGovt, payslips: loadPayslipSelect, history: renderHistory, audit: renderAudit, users: renderUsers };
+            if (renderers[id]) renderers[id]();
+        }
+
+        // ===== DASHBOARD =====
+        function renderDashboard() {
+            const active = DB.employees.filter(e => e.status === 'Active').length;
+            const totalPayroll = DB.payroll.reduce((s, p) => s + p.net, 0);
+            const lastPeriod = DB.payroll.length ? DB.payroll[DB.payroll.length - 1] : null;
+            document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card blue"><h3>Total Employees</h3><p>${DB.employees.length}</p></div>
+    <div class="stat-card green"><h3>Active Employees</h3><p>${active}</p></div>
+    <div class="stat-card purple"><h3>Attendance Records</h3><p>${DB.attendance.length}</p></div>
+    <div class="stat-card orange"><h3>Payroll Periods</h3><p>${DB.payroll.length}</p></div>
+    <div class="stat-card"><h3>Total Net Payroll</h3><p>₱${totalPayroll.toLocaleString()}</p></div>`;
+            const recent = DB.payroll.slice(-5).reverse();
+            document.getElementById('recentActivity').innerHTML = recent.length ?
+                '<table><tr><th>Period</th><th>Employees</th><th>Net Pay</th></tr>' + recent.map(p => `<tr><td>${p.from} to ${p.to}</td><td>${p.entries.length}</td><td>₱${p.net.toLocaleString()}</td></tr>`).join('') + '</table>' :
+                '<p style="color:#888;padding:20px;">No payroll processed yet.</p>';
+        }
+
+        // ===== EMPLOYEES =====
+        function renderEmployees() {
+            const q = (document.getElementById('empSearch')?.value || '').toLowerCase();
+            const list = DB.employees.filter(e => !q || e.name.toLowerCase().includes(q) || e.id.toLowerCase().includes(q));
+            document.getElementById('empTable').innerHTML = list.map(e => `
+    <tr><td>${e.id}</td><td>${e.name}</td><td>${e.pos}</td>
+    <td><span class="badge ${e.status.toLowerCase().replace(' ', '')}">${e.status}</span></td>
+    <td>
+      <button class="btn btn-sm btn-warning" onclick="editEmp('${e.id}')">Edit</button>
+      <button class="btn btn-sm btn-danger" onclick="delEmp('${e.id}')">Delete</button>
+    </td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center;">No employees</td></tr>';
+        }
+        function openEmpModal() {
+            editingEmpId = null;
+            document.getElementById('empModalTitle').textContent = 'Add Employee';
+            ['eName', 'ePos', 'eEmail', 'eContact', 'eHire', 'eTIN', 'eRate'].forEach(x => document.getElementById(x).value = '');
+            document.getElementById('empModal').classList.add('show');
+        }
+        function closeEmpModal() { document.getElementById('empModal').classList.remove('show'); }
+        function editEmp(id) {
+            const e = DB.employees.find(x => x.id === id);
+            editingEmpId = id;
+            document.getElementById('empModalTitle').textContent = 'Edit Employee';
+            document.getElementById('eName').value = e.name;
+            document.getElementById('ePos').value = e.pos;
+            document.getElementById('eStatus').value = e.status;
+            document.getElementById('eRateType').value = e.rateType;
+            document.getElementById('eRate').value = e.rate;
+            document.getElementById('eEmail').value = e.email;
+            document.getElementById('eContact').value = e.contact;
+            document.getElementById('eHire').value = e.hire;
+            document.getElementById('eTIN').value = e.tin;
+            document.getElementById('empModal').classList.add('show');
+        }
+        function saveEmployee() {
+            const data = {
+                name: document.getElementById('eName').value.trim(),
+                pos: document.getElementById('ePos').value.trim(),
+                status: document.getElementById('eStatus').value,
+                rateType: document.getElementById('eRateType').value,
+                rate: parseFloat(document.getElementById('eRate').value) || 0,
+                email: document.getElementById('eEmail').value.trim(),
+                contact: document.getElementById('eContact').value.trim(),
+                hire: document.getElementById('eHire').value,
+                tin: document.getElementById('eTIN').value.trim()
+            };
+            if (!data.name) return alert('Enter employee name');
+            if (editingEmpId) {
+                Object.assign(DB.employees.find(x => x.id === editingEmpId), data);
+                log('Updated employee: ' + data.name);
+            } else {
+                data.id = 'EMP' + String(DB.employees.length + 1).padStart(3, '0');
+                DB.employees.push(data);
+                log('Added employee: ' + data.name);
+            }
+            saveDB(); closeEmpModal(); renderEmployees();
+            alert(editingEmpId ? 'Employee updated' : 'Employee added');
+        }
+        function delEmp(id) {
+            const e = DB.employees.find(x => x.id === id);
+            if (confirm('Delete ' + e.name + '?')) {
+                DB.employees = DB.employees.filter(x => x.id !== id);
+                log('Deleted employee: ' + e.name);
+                saveDB(); renderEmployees();
+            }
+        }
+
+        // ===== SALARY =====
+        function renderSalary() {
+            document.getElementById('salaryTable').innerHTML = DB.employees.map(e => `
+    <tr><td>${e.name}</td><td>${e.pos}</td><td>${e.rateType}</td>
+    <td>₱${e.rate.toLocaleString()}</td>
+    <td><button class="btn btn-sm btn-warning" onclick="editSalary('${e.id}')">Edit</button></td></tr>`).join('');
+        }
+        function editSalary(id) {
+            const e = DB.employees.find(x => x.id === id);
+            const nt = prompt('Rate type (Monthly/Daily/Hourly):', e.rateType); if (!nt) return;
+            const nr = prompt('Rate amount:', e.rate); if (!nr) return;
+            e.rateType = nt; e.rate = parseFloat(nr);
+            log('Updated salary for ' + e.name);
+            saveDB(); renderSalary();
+        }
+
+        // ===== ATTENDANCE =====
+        function renderAttendance() {
+            populateEmpSelect('attEmp');
+            toggleAttendanceTimeFields();
+            document.getElementById('attTable').innerHTML = DB.attendance.slice().reverse().map((a, i) => {
+                const idx = DB.attendance.length - 1 - i;
+                const status = a.status || 'Present';
+                const hours = a.hours || 0;
+                return `<tr><td>${a.date}</td><td>${a.empName}</td><td>${status === 'Absent' ? '-' : a.in}</td><td>${status === 'Absent' ? '-' : a.out}</td>
+    <td>${hours.toFixed(2)}</td><td><span class="badge ${status === 'Absent' ? 'absent' : 'present'}">${status === 'Absent' ? 'Absent' : hours >= DB.settings.hours ? 'Full' : 'Partial'}</span></td>
+    <td><button class="btn btn-sm btn-danger" onclick="delAtt(${idx})">Delete</button></td></tr>`;
+            }).join('') || '<tr><td colspan="7" style="text-align:center;">No records</td></tr>';
+        }
+        function toggleAttendanceTimeFields() {
+            const absent = document.getElementById('attStatus').value === 'Absent';
+            document.getElementById('attIn').disabled = absent;
+            document.getElementById('attOut').disabled = absent;
+        }
+        function populateEmpSelect(id) {
+            const sel = document.getElementById(id);
+            sel.innerHTML = DB.employees.filter(e => e.status === 'Active').map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+        }
+        function addAttendance() {
+            const eid = document.getElementById('attEmp').value;
+            const emp = DB.employees.find(x => x.id === eid);
+            const date = document.getElementById('attDate').value;
+            const status = document.getElementById('attStatus').value;
+            const inT = document.getElementById('attIn').value;
+            const outT = document.getElementById('attOut').value;
+            if (!date) return alert('Select date');
+            let hours = 0;
+            if (status === 'Present') {
+                if (!inT || !outT) return alert('Enter time in and time out');
+                const [h1, m1] = inT.split(':').map(Number), [h2, m2] = outT.split(':').map(Number);
+                hours = ((h2 * 60 + m2) - (h1 * 60 + m1)) / 60;
+                if (hours < 0) hours += 24;
+            }
+            DB.attendance.push({ date, empId: eid, empName: emp.name, status, in: status === 'Absent' ? '' : inT, out: status === 'Absent' ? '' : outT, hours });
+            log(`${status} attendance recorded for ${emp.name} on ${date}`);
+            saveDB(); renderAttendance();
+        }
+        function delAtt(i) {
+            if (confirm('Delete record?')) {
+                DB.attendance.splice(i, 1); saveDB(); renderAttendance();
+            }
+        }
+
+        // ===== OT / LATE / UT / ABS =====
+        function renderRecords() {
+            populateEmpSelect('recEmp');
+            document.getElementById('recTable').innerHTML = DB.records.slice().reverse().map((r, i) => {
+                const idx = DB.records.length - 1 - i;
+                return `<tr><td>${r.date}</td><td>${r.empName}</td><td><span class="badge ${r.type === 'Overtime' ? 'ot' : r.type === 'Late' ? 'late' : 'absent'}">${r.type}</span></td>
+    <td>${r.hours}</td><td>₱${r.amount.toFixed(2)}</td>
+    <td><button class="btn btn-sm btn-danger" onclick="delRec(${idx})">Delete</button></td></tr>`;
+            }).join('') || '<tr><td colspan="6" style="text-align:center;">No records</td></tr>';
+        }
+        function addRecord() {
+            const eid = document.getElementById('recEmp').value;
+            const emp = DB.employees.find(x => x.id === eid);
+            const date = document.getElementById('recDate').value;
+            const type = document.getElementById('recType').value;
+            const hours = parseFloat(document.getElementById('recHours').value) || 0;
+            if (!date || !hours) return alert('Fill all fields');
+            const hourly = emp.rateType === 'Monthly' ? emp.rate / (DB.settings.days * DB.settings.hours) : emp.rateType === 'Daily' ? emp.rate / DB.settings.hours : emp.rate;
+            let amount = 0;
+            if (type === 'Overtime') amount = hourly * hours * DB.settings.ot;
+            else if (type === 'Late' || type === 'Undertime') amount = hourly * hours * DB.settings.late;
+            else amount = hourly * DB.settings.hours;
+            DB.records.push({ date, empId: eid, empName: emp.name, type, hours, amount });
+            log(`${type} recorded for ${emp.name}: ${hours}h`);
+            saveDB(); renderRecords();
+        }
+        function delRec(i) {
+            if (confirm('Delete?')) { DB.records.splice(i, 1); saveDB(); renderRecords(); }
+        }
+
+        // ===== ALLOWANCES =====
+        function renderAllowances() {
+            populateEmpSelect('alEmp');
+            document.getElementById('alTable').innerHTML = DB.allowances.slice().reverse().map((a, i) => {
+                const idx = DB.allowances.length - 1 - i;
+                return `<tr><td>${a.empName}</td><td>${a.type}</td><td>₱${a.amount.toFixed(2)}</td><td>${a.date}</td>
+    <td><button class="btn btn-sm btn-danger" onclick="delAl(${idx})">Delete</button></td></tr>`;
+            }).join('') || '<tr><td colspan="5" style="text-align:center;">No records</td></tr>';
+        }
+        function addAllowance() {
+            const eid = document.getElementById('alEmp').value;
+            const emp = DB.employees.find(x => x.id === eid);
+            const type = document.getElementById('alType').value.trim();
+            const amount = parseFloat(document.getElementById('alAmount').value) || 0;
+            if (!type || !amount) return alert('Fill all fields');
+            DB.allowances.push({ empId: eid, empName: emp.name, type, amount, date: new Date().toISOString().slice(0, 10) });
+            log(`Allowance added for ${emp.name}: ${type} ₱${amount}`);
+            saveDB(); renderAllowances();
+        }
+        function delAl(i) { if (confirm('Delete?')) { DB.allowances.splice(i, 1); saveDB(); renderAllowances(); } }
+
+        // ===== DEDUCTIONS =====
+        function renderDeductions() {
+            populateEmpSelect('dedEmp');
+            document.getElementById('dedTable').innerHTML = DB.deductions.slice().reverse().map((d, i) => {
+                const idx = DB.deductions.length - 1 - i;
+                return `<tr><td>${d.empName}</td><td>${d.type}</td><td>₱${d.amount.toFixed(2)}</td><td>${d.date}</td>
+    <td><button class="btn btn-sm btn-danger" onclick="delDed(${idx})">Delete</button></td></tr>`;
+            }).join('') || '<tr><td colspan="5" style="text-align:center;">No records</td></tr>';
+        }
+        function addDeduction() {
+            const eid = document.getElementById('dedEmp').value;
+            const emp = DB.employees.find(x => x.id === eid);
+            const type = document.getElementById('dedType').value.trim();
+            const amount = parseFloat(document.getElementById('dedAmount').value) || 0;
+            if (!type || !amount) return alert('Fill all fields');
+            DB.deductions.push({ empId: eid, empName: emp.name, type, amount, date: new Date().toISOString().slice(0, 10) });
+            log(`Deduction added for ${emp.name}: ${type} ₱${amount}`);
+            saveDB(); renderDeductions();
+        }
+        function delDed(i) { if (confirm('Delete?')) { DB.deductions.splice(i, 1); saveDB(); renderDeductions(); } }
+
+        // ===== GOVT =====
+        function renderGovt() {
+            const g = DB.govt;
+            document.getElementById('sssEmp').value = g.sssEmp;
+            document.getElementById('sssEr').value = g.sssEr;
+            document.getElementById('phEmp').value = g.phEmp;
+            document.getElementById('phEr').value = g.phEr;
+            document.getElementById('hbEmp').value = g.hbEmp;
+            document.getElementById('hbEr').value = g.hbEr;
+            document.getElementById('taxTable').innerHTML = g.tax.map(t => `<tr><td>₱${t.min.toLocaleString()} - ₱${t.max === Infinity ? 'Above' : t.max.toLocaleString()}</td><td>${(t.rate * 100).toFixed(1)}%</td><td>₱${t.base.toLocaleString()}</td></tr>`).join('');
+        }
+        function saveGovt() {
+            DB.govt.sssEmp = parseFloat(document.getElementById('sssEmp').value);
+            DB.govt.sssEr = parseFloat(document.getElementById('sssEr').value);
+            DB.govt.phEmp = parseFloat(document.getElementById('phEmp').value);
+            DB.govt.phEr = parseFloat(document.getElementById('phEr').value);
+            DB.govt.hbEmp = parseFloat(document.getElementById('hbEmp').value);
+            DB.govt.hbEr = parseFloat(document.getElementById('hbEr').value);
+            log('Updated government contribution rates');
+            saveDB(); alert('Rates saved');
+        }
+
+        // ===== PAYROLL CALCULATION =====
+        function calcGross(emp, from, to) {
+            const att = DB.attendance.filter(a => a.empId === emp.id && a.date >= from && a.date <= to);
+            const workedDays = att.filter(a => (a.status || 'Present') !== 'Absent');
+            const totalHours = workedDays.reduce((s, a) => s + (a.hours || 0), 0);
+            let base = 0;
+            if (emp.rateType === 'Monthly') base = emp.rate;
+            else if (emp.rateType === 'Daily') base = emp.rate * workedDays.length;
+            else base = emp.rate * totalHours;
+            return { base, totalHours, days: workedDays.length };
+        }
+        function calcOT(empId, from, to) { return DB.records.filter(r => r.empId === empId && r.date >= from && r.date <= to && r.type === 'Overtime').reduce((s, r) => s + r.amount, 0); }
+        function calcDed(empId, from, to) { return DB.records.filter(r => r.empId === empId && r.date >= from && r.date <= to && (r.type === 'Late' || r.type === 'Undertime' || r.type === 'Absent')).reduce((s, r) => s + r.amount, 0); }
+        function calcAllow(empId, from, to) { return DB.allowances.filter(a => a.empId === empId && a.date >= from && a.date <= to).reduce((s, a) => s + a.amount, 0); }
+        function calcOtherDed(empId, from, to) { return DB.deductions.filter(d => d.empId === empId && d.date >= from && d.date <= to).reduce((s, d) => s + d.amount, 0); }
+        function calcTax(annual) {
+            const brackets = DB.govt.tax;
+            for (const b of brackets) {
+                if (annual <= b.max) return b.base + (annual - b.min) * b.rate;
+            }
+            return 0;
+        }
+        function calcGovt(gross) {
+            const g = DB.govt;
+            const sss = Math.min(gross * g.sssEmp / 100, 1800);
+            const ph = Math.min(gross * g.phEmp / 100, 900);
+            const hb = Math.min(gross * g.hbEmp / 100, 200);
+            return { sss, ph, hb, total: sss + ph + hb };
+        }
+
+        function processPayroll() {
+            const from = document.getElementById('ppFrom').value;
+            const to = document.getElementById('ppTo').value;
+            if (!from || !to) return alert('Select period');
+            if (from > to) return alert('Invalid period');
+            const entries = [];
+            let totalGross = 0, totalDed = 0, totalNet = 0;
+            DB.employees.filter(e => e.status === 'Active').forEach(emp => {
+                const g = calcGross(emp, from, to);
+                const ot = calcOT(emp.id, from, to);
+                const allow = calcAllow(emp.id, from, to);
+                const late = calcDed(emp.id, from, to);
+                const otherDed = calcOtherDed(emp.id, from, to);
+                const grossPay = g.base + ot + allow;
+                const govt = calcGovt(grossPay);
+                const annualGross = grossPay * 12;
+                const taxable = Math.max(0, annualGross - 250000);
+                const annualTax = calcTax(taxable + 250000);
+                const tax = annualTax / 12;
+                const totalDeductions = late + otherDed + govt.total + tax;
+                const net = grossPay - totalDeductions;
+                entries.push({
+                    empId: emp.id, empName: emp.name, pos: emp.pos,
+                    base: g.base, hours: g.totalHours, days: g.days, ot, allow, late, otherDed,
+                    gross: grossPay, sss: govt.sss, ph: govt.ph, hb: govt.hb, tax,
+                    totalDed: totalDeductions, net
+                });
+                totalGross += grossPay; totalDed += totalDeductions; totalNet += net;
+            });
+            const period = { id: 'PP' + Date.now(), from, to, entries, totalGross, totalDed, totalNet, date: new Date().toISOString() };
+            DB.payroll.push(period);
+            log(`Payroll processed: ${from} to ${to}, ${entries.length} employees, Net: ₱${totalNet.toLocaleString()}`);
+            saveDB();
+            let html = `<h3>Payroll Processed: ${from} to ${to}</h3>
+    <div class="stats">
+      <div class="stat-card green"><h3>Total Gross</h3><p>₱${totalGross.toLocaleString()}</p></div>
+      <div class="stat-card red"><h3>Total Deductions</h3><p>₱${totalDed.toLocaleString()}</p></div>
+      <div class="stat-card"><h3>Total Net Pay</h3><p>₱${totalNet.toLocaleString()}</p></div>
+    </div>
+    <table><tr><th>Employee</th><th>Base</th><th>OT</th><th>Allow</th><th>Gross</th><th>Deductions</th><th>Net</th></tr>`;
+            entries.forEach(e => {
+                html += `<tr><td>${e.empName}</td><td>₱${e.base.toLocaleString()}</td>
+    <td>₱${e.ot.toFixed(2)}</td><td>₱${e.allow.toFixed(2)}</td><td>₱${e.gross.toLocaleString()}</td>
+    <td>₱${e.totalDed.toFixed(2)}</td><td><b>₱${e.net.toLocaleString()}</b></td></tr>`;
+            });
+            html += '</table>';
+            document.getElementById('processResult').innerHTML = html;
+        }
+
+        // ===== PAYSLIPS =====
+        function loadPayslipSelect() {
+            const empSel = document.getElementById('psEmp');
+            empSel.innerHTML = DB.employees.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+            const perSel = document.getElementById('psPeriod');
+            perSel.innerHTML = DB.payroll.map(p => `<option value="${p.id}">${p.from} to ${p.to}</option>`).join('');
+        }
+        function viewPayslip() {
+            const eid = document.getElementById('psEmp').value;
+            const pid = document.getElementById('psPeriod').value;
+            const period = DB.payroll.find(p => p.id === pid);
+            if (!period) return alert('No payroll period selected');
+            const entry = period.entries.find(e => e.empId === eid);
+            if (!entry) return alert('No payslip for this employee in this period');
+            const emp = DB.employees.find(e => e.id === eid);
+            const html = buildPayslipHTML(emp, entry, period);
+            document.getElementById('payslipView').innerHTML = html;
+        }
+        function buildPayslipHTML(emp, entry, period) {
+            return `<div class="payslip" id="payslipContent">
+    <div class="payslip-header">
+      <h2>${DB.settings.company}</h2>
+      <p>${DB.settings.address}</p>
+      <h3 style="margin-top:10px;">PAYSLIP</h3>
+      <p>Period: ${period.from} to ${period.to}</p>
+    </div>
+    <div class="payslip-row"><span>Employee ID:</span><span>${emp.id}</span></div>
+    <div class="payslip-row"><span>Name:</span><span>${emp.name}</span></div>
+    <div class="payslip-row"><span>Position:</span><span>${emp.pos}</span></div>
+    <div class="payslip-row"><span>TIN:</span><span>${emp.tin || '-'}</span></div>
+    <hr style="margin:15px 0;border:none;border-top:1px dashed #1e3c72;">
+    <h4 style="color:#1e3c72;">EARNINGS</h4>
+    <div class="payslip-row"><span>Basic Pay (${entry.days} days / ${entry.hours.toFixed(1)} hrs):</span><span>₱${entry.base.toLocaleString()}</span></div>
+    <div class="payslip-row"><span>Overtime:</span><span>₱${entry.ot.toFixed(2)}</span></div>
+    <div class="payslip-row"><span>Allowances/Bonus:</span><span>₱${entry.allow.toFixed(2)}</span></div>
+    <div class="payslip-row" style="font-weight:bold;"><span>GROSS PAY:</span><span>₱${entry.gross.toLocaleString()}</span></div>
+    <hr style="margin:15px 0;border:none;border-top:1px dashed #1e3c72;">
+    <h4 style="color:#e74c3c;">DEDUCTIONS</h4>
+    <div class="payslip-row"><span>Late/Undertime/Absent:</span><span>₱${entry.late.toFixed(2)}</span></div>
+    <div class="payslip-row"><span>Other Deductions:</span><span>₱${entry.otherDed.toFixed(2)}</span></div>
+    <div class="payslip-row"><span>SSS:</span><span>₱${entry.sss.toFixed(2)}</span></div>
+    <div class="payslip-row"><span>PhilHealth:</span><span>₱${entry.ph.toFixed(2)}</span></div>
+    <div class="payslip-row"><span>Pag-IBIG:</span><span>₱${entry.hb.toFixed(2)}</span></div>
+    <div class="payslip-row"><span>Withholding Tax:</span><span>₱${entry.tax.toFixed(2)}</span></div>
+    <div class="payslip-row" style="font-weight:bold;color:#e74c3c;"><span>TOTAL DEDUCTIONS:</span><span>₱${entry.totalDed.toFixed(2)}</span></div>
+    <div class="payslip-row total"><span>NET PAY:</span><span>₱${entry.net.toLocaleString()}</span></div>
+  </div>`;
+        }
+        function printPayslip() {
+            const content = document.getElementById('payslipContent');
+            if (!content) return alert('View payslip first');
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const empId = document.getElementById('psEmp').value;
+            const pid = document.getElementById('psPeriod').value;
+            const period = DB.payroll.find(p => p.id === pid);
+            const entry = period.entries.find(e => e.empId === empId);
+            const emp = DB.employees.find(e => e.id === empId);
+            doc.setFontSize(16); doc.text(DB.settings.company, 105, 15, { align: 'center' });
+            doc.setFontSize(10); doc.text(DB.settings.address, 105, 22, { align: 'center' });
+            doc.setFontSize(14); doc.text('PAYSLIP', 105, 35, { align: 'center' });
+            doc.setFontSize(10); doc.text(`Period: ${period.from} to ${period.to}`, 105, 42, { align: 'center' });
+            doc.autoTable({
+                startY: 50,
+                body: [
+                    ['Employee ID', emp.id, 'Name', emp.name],
+                    ['Position', emp.pos, '', ''],
+                    ['TIN', emp.tin || '-', '', '']
+                ],
+                theme: 'plain', styles: { fontSize: 9 }
+            });
+            doc.autoTable({
+                startY: doc.lastAutoTable.finalY + 5,
+                head: [['EARNINGS', 'Amount'], ['Basic Pay', '₱' + entry.base.toLocaleString()], ['Overtime', '₱' + entry.ot.toFixed(2)], ['Allowances', '₱' + entry.allow.toFixed(2)], ['GROSS PAY', '₱' + entry.gross.toLocaleString()]],
+                theme: 'grid', styles: { fontSize: 9 }, headStyles: { fillColor: [39, 174, 96] }
+            });
+            doc.autoTable({
+                startY: doc.lastAutoTable.finalY + 5,
+                head: [['DEDUCTIONS', 'Amount'], ['Late/UT/Absent', '₱' + entry.late.toFixed(2)], ['Other Deductions', '₱' + entry.otherDed.toFixed(2)], ['SSS', '₱' + entry.sss.toFixed(2)], ['PhilHealth', '₱' + entry.ph.toFixed(2)], ['Pag-IBIG', '₱' + entry.hb.toFixed(2)], ['Tax', '₱' + entry.tax.toFixed(2)], ['TOTAL DEDUCTIONS', '₱' + entry.totalDed.toFixed(2)]],
+                theme: 'grid', styles: { fontSize: 9 }, headStyles: { fillColor: [231, 76, 60] }
+            });
+            doc.setFontSize(12); doc.setFont(undefined, 'bold');
+            doc.text(`NET PAY: ₱${entry.net.toLocaleString()}`, 105, doc.lastAutoTable.finalY + 15, { align: 'center' });
+            doc.save(`Payslip_${emp.name}_${period.from}.pdf`);
+        }
+
+        // ===== HISTORY =====
+        function renderHistory() {
+            document.getElementById('histTable').innerHTML = DB.payroll.slice().reverse().map(p => `
+    <tr><td>${p.from} to ${p.to}</td><td>${p.entries.length}</td>
+    <td>₱${p.totalGross.toLocaleString()}</td><td>₱${p.totalDed.toLocaleString()}</td>
+    <td><b>₱${p.totalNet.toLocaleString()}</b></td>
+    <td><button class="btn btn-sm btn-danger" onclick="delPayroll('${p.id}')">Delete</button></td></tr>`).join('') || '<tr><td colspan="6" style="text-align:center;">No payroll history</td></tr>';
+        }
+        function delPayroll(id) {
+            if (confirm('Delete this payroll period?')) {
+                DB.payroll = DB.payroll.filter(p => p.id !== id);
+                log('Deleted payroll period');
+                saveDB(); renderHistory();
+            }
+        }
+
+        // ===== REPORTS =====
+        function generateReport() {
+            const type = document.getElementById('repType').value;
+            let html = '<h3>' + type + '</h3>', rows = [], headers = [];
+            if (type === 'Payroll Summary') {
+                headers = ['Employee', 'Gross', 'Deductions', 'Net'];
+                const last = DB.payroll[DB.payroll.length - 1];
+                if (last) last.entries.forEach(e => rows.push([e.empName, e.gross.toFixed(2), e.totalDed.toFixed(2), e.net.toFixed(2)]));
+            } else if (type === 'Employee Earnings') {
+                headers = ['Employee', 'Total Gross (All Periods)', 'Total Net'];
+                DB.employees.forEach(emp => {
+                    let g = 0, n = 0;
+                    DB.payroll.forEach(p => { const e = p.entries.find(x => x.empId === emp.id); if (e) { g += e.gross; n += e.net; } });
+                    rows.push([emp.name, g.toFixed(2), n.toFixed(2)]);
+                });
+            } else if (type === 'Tax Report') {
+                headers = ['Employee', 'Monthly Tax', 'Annual Tax'];
+                const last = DB.payroll[DB.payroll.length - 1];
+                if (last) last.entries.forEach(e => rows.push([e.empName, e.tax.toFixed(2), (e.tax * 12).toFixed(2)]));
+            } else if (type === 'Government Contributions') {
+                headers = ['Employee', 'SSS', 'PhilHealth', 'Pag-IBIG', 'Total'];
+                const last = DB.payroll[DB.payroll.length - 1];
+                if (last) last.entries.forEach(e => rows.push([e.empName, e.sss.toFixed(2), e.ph.toFixed(2), e.hb.toFixed(2), (e.sss + e.ph + e.hb).toFixed(2)]));
+            } else if (type === 'Attendance Summary') {
+                headers = ['Employee', 'Days Worked', 'Total Hours', 'OT Hours', 'Late Hours'];
+                DB.employees.forEach(emp => {
+                    const att = DB.attendance.filter(a => a.empId === emp.id && (a.status || 'Present') !== 'Absent');
+                    const ot = DB.records.filter(r => r.empId === emp.id && r.type === 'Overtime').reduce((s, r) => s + r.hours, 0);
+                    const late = DB.records.filter(r => r.empId === emp.id && (r.type === 'Late' || r.type === 'Undertime')).reduce((s, r) => s + r.hours, 0);
+                    rows.push([emp.name, att.length, att.reduce((s, a) => s + (a.hours || 0), 0).toFixed(1), ot.toFixed(1), late.toFixed(1)]);
+                });
+            }
+            lastReportData = { headers, rows, title: type };
+            html += '<table><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>' + rows.map(r => '<tr>' + r.map(c => `<td>${c}</td>`).join('') + '</tr>').join('') + '</table>';
+            document.getElementById('reportOutput').innerHTML = html;
+        }
+        function exportExcel() {
+            if (!lastReportData) return alert('Generate a report first');
+            const ws = XLSX.utils.aoa_to_sheet([lastReportData.headers, ...lastReportData.rows]);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Report');
+            XLSX.writeFile(wb, lastReportData.title.replace(/\s/g, '_') + '.xlsx');
+            log('Exported Excel: ' + lastReportData.title);
+        }
+        function exportPDF() {
+            if (!lastReportData) return alert('Generate a report first');
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(16); doc.text(DB.settings.company, 105, 15, { align: 'center' });
+            doc.setFontSize(12); doc.text(lastReportData.title, 105, 25, { align: 'center' });
+            doc.autoTable({
+                startY: 35,
+                head: [lastReportData.headers],
+                body: lastReportData.rows,
+                theme: 'grid',
+                styles: { fontSize: 9 }
+            });
+            doc.save(lastReportData.title.replace(/\s/g, '_') + '.pdf');
+            log('Exported PDF: ' + lastReportData.title);
+        }
+
+        // ===== AUDIT =====
+        function renderAudit() {
+            document.getElementById('auditList').innerHTML = DB.audit.map(a => `
+    <div class="audit-item"><b>${a.user}</b> - ${a.action} <span class="time">${a.time}</span></div>`).join('') || '<p style="color:#888;">No audit logs</p>';
+        }
+
+        // ===== USERS =====
+        function renderUsers() {
+            document.getElementById('usersTable').innerHTML = DB.users.map((u, i) => `
+    <tr><td>${u.u}</td><td>${u.r}</td>
+    <td><button class="btn btn-sm btn-danger" onclick="delUser(${i})">Delete</button></td></tr>`).join('');
+        }
+        function addUser() {
+            const u = document.getElementById('uName').value, p = document.getElementById('uPass').value, r = document.getElementById('uRole').value;
+            if (!u || !p) return alert('Fill all fields');
+            DB.users.push({ u, p, r });
+            log('Added user: ' + u);
+            saveDB(); renderUsers();
+        }
+        function delUser(i) {
+            if (confirm('Delete user?')) {
+                log('Deleted user: ' + DB.users[i].u);
+                DB.users.splice(i, 1); saveDB(); renderUsers();
+            }
+        }
+
+        // ===== SETTINGS =====
+        function saveSettings() {
+            DB.settings = {
+                company: document.getElementById('setCompany').value,
+                address: document.getElementById('setAddress').value,
+                hours: +document.getElementById('setHours').value,
+                days: +document.getElementById('setDays').value,
+                ot: +document.getElementById('setOT').value,
+                late: +document.getElementById('setLate').value
+            };
+            log('Updated system settings');
+            saveDB(); alert('Settings saved');
+        }
+
+        function exportBackup() {
+            const backup = JSON.stringify(DB, (key, value) =>
+                key === 'max' && value === Infinity ? 'Infinity' : value, 2);
+            const url = URL.createObjectURL(new Blob([backup], { type: 'application/json' }));
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `payroll-backup-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+        }
+
+        async function importBackup(event) {
+            const input = event.target;
+            const file = input.files[0];
+            if (!file) return;
+
+            try {
+                const imported = JSON.parse(await file.text(), (key, value) =>
+                    key === 'max' && value === 'Infinity' ? Infinity : value);
+                const arrayKeys = ['employees', 'departments', 'salary', 'attendance', 'records', 'allowances', 'deductions', 'payroll', 'users', 'audit'];
+                const valid = imported && typeof imported === 'object' &&
+                    arrayKeys.every(key => Array.isArray(imported[key])) &&
+                    imported.employees.every(employee => employee && typeof employee.id === 'string' && typeof employee.name === 'string') &&
+                    imported.settings && typeof imported.settings === 'object' &&
+                    imported.govt && typeof imported.govt === 'object';
+                if (!valid) throw new Error('Invalid payroll backup');
+                if (!confirm('Importing this backup will replace all current payroll data. Continue?')) return;
+
+                localStorage.setItem('payroll_db', JSON.stringify(imported));
+                location.reload();
+            } catch (error) {
+                alert('Could not import this file. Choose a valid payroll JSON backup.');
+            } finally {
+                input.value = '';
+            }
+        }
+
+        function resetData() {
+            if (!confirm('Reset all saved payroll data? This cannot be undone unless you have a backup.')) return;
+            localStorage.removeItem('payroll_db');
+            location.reload();
+        }
+
+        // ===== INIT =====
+        function refreshAll() {
+            renderDashboard();
+            document.getElementById('attDate').value = new Date().toISOString().slice(0, 10);
+            document.getElementById('recDate').value = new Date().toISOString().slice(0, 10);
+            const today = new Date(), from = new Date(); from.setDate(1);
+            document.getElementById('ppFrom').value = from.toISOString().slice(0, 10);
+            document.getElementById('ppTo').value = today.toISOString().slice(0, 10);
+            const s = DB.settings;
+            document.getElementById('setCompany').value = s.company;
+            document.getElementById('setAddress').value = s.address;
+            document.getElementById('setHours').value = s.hours;
+            document.getElementById('setDays').value = s.days;
+            document.getElementById('setOT').value = s.ot;
+            document.getElementById('setLate').value = s.late;
+        }
+    </script>
+</body>
+
+</html>
